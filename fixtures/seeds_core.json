@@ -39,7 +39,7 @@
     "pk": 101,
     "fields": {
       "name": "Amala Mama Sikira",
-      "raw_address": "Orita Challenge",
+      "address": "Orita Challenge",
       "lat": 7.35,
       "lng": 3.89,
       "city": "Ibadan",
@@ -68,7 +68,7 @@
     "pk": 102,
     "fields": {
       "name": "Amala Iya Meta",
-      "raw_address": "Ring Road",
+      "address": "Ring Road",
       "lat": 7.38,
       "lng": 3.89,
       "city": "Ibadan",
@@ -92,7 +92,7 @@
     "pk": 103,
     "fields": {
       "name": "Buka Gidi",
-      "raw_address": "Surulere",
+      "address": "Surulere",
       "lat": 6.495,
       "lng": 3.354,
       "city": "Lagos",
@@ -116,7 +116,7 @@
     "pk": 104,
     "fields": {
       "name": "Abula Corner",
-      "raw_address": "Area 11",
+      "address": "Area 11",
       "lat": 9.046,
       "lng": 7.491,
       "city": "Abuja",

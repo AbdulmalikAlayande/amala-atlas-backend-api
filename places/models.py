@@ -38,7 +38,7 @@ class Spot(BaseModel):
     photo_urls  = GenericRelation(PhotoURL)
     tags        = models.JSONField(default=list, blank=True)
     hours_text  = models.CharField(max_length=200, blank=True)
-    phone       = models.CharField(max_length=15, blank=True)
+    phone       = models.CharField(max_length=25, blank=True)
     website     = models.CharField(max_length=200, blank=True)
     email       = models.EmailField(max_length=150, blank=True)
     amala_focus = models.CharField(choices=SpotCuisineFocus.choices, default=SpotCuisineFocus.UNKNOWN, max_length=10)
