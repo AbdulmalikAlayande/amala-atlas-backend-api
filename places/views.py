@@ -74,7 +74,10 @@ class CandidateSubmissionView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        submission: Submission = serializer.save(submitted_by=request.user if getattr(request, 'user', None) and request.user.is_authenticated else None)
+        submission: Submission = serializer.save(
+            submitted_by=request.user if getattr(request, 'user', None) and request.user.is_authenticated else None,
+            source_channel="web_form",
+        )
 
         print("Serializer valid data", serializer.validated_data)
         print("Serializer valid data values", serializer.validated_data.values())
