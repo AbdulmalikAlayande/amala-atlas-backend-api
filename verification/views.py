@@ -50,23 +50,21 @@ class GetVerificationCandidateQueue(ListAPIView):
         query_set = Candidate.objects.filter(status="pending_verification").order_by('-score', '-created_at')
         city = self.request.query_params.get('city', None)
         src = self.request.query_params.get('source_kind', None)
-        if city: query_set = query_set.filter(city__iexact=city)
-        if src: query_set = query_set.filter(source_kind__iexact=src)
+        channel = self.request.query_params.get('source_channel', None)
+        if city:
+            query_set = query_set.filter(city__iexact=city)
+        if src:
+            query_set = query_set.filter(source_kind__iexact=src)
+        if channel:
+            query_set = query_set.filter(source_channel__iexact=channel)
         return query_set
 
 
-"""
-
-"""
 class GetVerificationCandidate(RetrieveAPIView):
     queryset = Verification.objects.all()
     serializer_class = VerificationSerializer
-    filterset_fields = ['city', 'source_kind']
 
 
-"""
-
-"""
 class VerificationActionView(generics.CreateAPIView):
     serializer_class = VerificationActionSerializer
 
