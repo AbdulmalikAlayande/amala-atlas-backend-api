@@ -83,43 +83,84 @@ class VerificationActionView(generics.CreateAPIView):
         if user and not getattr(user, "is_authenticated", False):
             user = None
 
+        # Update existing verification or create new one
         existing_q = candidate.verifications
         if user:
             existing_q = existing_q.filter(by_user=user)
         else:
             existing_q = existing_q.filter(by_user__isnull=True)
 
-        value = existing_q.first()
-        if value:
-            value.action = action
-            value.notes = notes
-            value.save(update_fields=["action", "notes"])
+        existing = existing_q.first()
+        if existing:
+            existing.action = action
+            existing.notes = notes
+            existing.save(update_fields=["action", "notes"])
         else:
             Verification.objects.create(candidate=candidate, action=action, notes=notes, by_user=user)
 
-        Verification.objects.create(candidate=candidate, action=action, notes=notes)
-
+        # Count votes
         approvals = candidate.verifications.filter(action=Verification.Actions.APPROVE).count()
         rejects = candidate.verifications.filter(action=Verification.Actions.REJECT).count()
 
+        # Dynamic threshold based on source channel
+        approve_threshold = get_approval_threshold(candidate)
+
         if action == Verification.Actions.APPROVE:
-            if approvals >= APPROVE_THRESHOLD and candidate.status != "approved":
-                Spot.objects.create(
-                    name=candidate.name, lat=candidate.lat or 0.0, lng=candidate.lng or 0.0,
-                    address=candidate.raw_address or "", city=candidate.city, country=candidate.country,
-                    price_band=candidate.price_band or "", tags=[],
-                    photos=[{"url": candidate.photo_url}] if candidate.photo_url else [],
-                    open_hours=candidate.open_hours, source="verified",
-                )
-                candidate.status = "approved"
-                candidate.save(update_fields=["status"])
-                return Response({"ok": True}, status=status.HTTP_201_CREATED, )
+            if approvals >= approve_threshold and candidate.status != "approved":
+                _promote_to_spot(candidate)
+                return Response({
+                    "ok": True,
+                    "message": "Candidate approved and promoted to Spot",
+                    "approvals": approvals,
+                    "threshold": approve_threshold,
+                }, status=status.HTTP_201_CREATED)
+            return Response({
+                "ok": True,
+                "message": "Vote recorded",
+                "approvals": approvals,
+                "threshold": approve_threshold,
+            }, status=status.HTTP_200_OK)
 
         if action == Verification.Actions.REJECT:
             if rejects >= REJECT_THRESHOLD and candidate.status != "rejected":
                 candidate.status = "rejected"
                 candidate.save(update_fields=["status"])
-            return Response({"ok": True, "rejections": rejects, "message": "Candidate Rejected"}, status=status.HTTP_200_OK)
+                return Response({
+                    "ok": True,
+                    "message": "Candidate rejected",
+                    "rejections": rejects,
+                }, status=status.HTTP_200_OK)
+            return Response({
+                "ok": True,
+                "message": "Vote recorded",
+                "rejections": rejects,
+            }, status=status.HTTP_200_OK)
 
-        return Response({"error": "unknown action"}, status=400)
+        # merge, edit, or other actions
+        return Response({"ok": True, "message": f"Action '{action}' recorded"}, status=status.HTTP_200_OK)
 
+
+def _promote_to_spot(candidate: Candidate):
+    """Promote a verified candidate to a canonical Spot."""
+    Spot.objects.create(
+        name=candidate.name,
+        lat=candidate.lat or 0.0,
+        lng=candidate.lng or 0.0,
+        address=candidate.raw_address or "",
+        city=candidate.city,
+        state=candidate.state,
+        country=candidate.country,
+        price_band=candidate.price_band or "",
+        tags=candidate.tags or [],
+        photos=[{"url": p.url} for p in candidate.photo_urls.all()],
+        phone=candidate.phone or "",
+        email=candidate.email or "",
+        website=candidate.website or "",
+        hours_text=candidate.hours_text or "",
+        open_hours=candidate.open_hours,
+        source="verified",
+        submission_count=1,
+    )
+    candidate.status = "approved"
+    candidate.save(update_fields=["status"])
+    logger.info(f"Promoted candidate to Spot: {candidate.name}")
