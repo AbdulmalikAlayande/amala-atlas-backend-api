@@ -79,13 +79,9 @@ class CandidateSubmissionView(generics.CreateAPIView):
             source_channel="web_form",
         )
 
-        print("Serializer valid data", serializer.validated_data)
-        print("Serializer valid data values", serializer.validated_data.values())
-        print("Serializer valid data values type", type(serializer.validated_data))
-        print("Serializer valid data values type", type(serializer.validated_data.values()))
-        photo_urls = serializer.validated_data["photo_urls"]
+        photo_urls = serializer.validated_data.get("photo_urls", [])
 
-        if (not submission.photo_urls.exists() or submission.photo_urls.count() == 0) and photo_urls:
+        if photo_urls and not submission.photo_urls.exists():
             for url in photo_urls:
                 PhotoURL.objects.create(url=url, content_object=submission)
 
