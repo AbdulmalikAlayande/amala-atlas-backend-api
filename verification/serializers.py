@@ -34,8 +34,9 @@ class CandidateQueueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Candidate
-        fields = ("id", "name", "city", "state", "country", "score", "source_kind", "evidence", "photo_urls",
-                  "price_band", "tags", "phone", "kind", "email", "website", "signals", "lat", "lng", "raw_address")
+        fields = ("id", "name", "city", "state", "country", "score", "source_kind", "source_channel",
+                  "evidence", "photo_urls", "price_band", "tags", "phone", "kind", "email", "website",
+                  "signals", "lat", "lng", "raw_address")
 
     def get_photo_urls(self, obj):
         print(self)
