@@ -45,6 +45,8 @@ class Spot(BaseModel):
     photos      = models.JSONField(default=list, blank=True)  # [{url, by?, at}]
     open_hours  = models.JSONField(null=True, blank=True)
     source      = models.CharField(max_length=20, default="verified")
+    submission_count = models.PositiveIntegerField(default=0)
+    last_confirmed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"""
