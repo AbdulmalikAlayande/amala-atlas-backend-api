@@ -72,7 +72,7 @@ class VerificationActionView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        logger.info(f"Validated data from serializer: {serializer.validated_data}")
+
         candidate_id = serializer.validated_data['candidate_id']
         action = serializer.validated_data['action']
         notes = serializer.validated_data.get("notes", "")
