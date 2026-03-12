@@ -129,10 +129,4 @@ class Submission(BaseModel):
     conversation_id = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
-        return f"""
-        Model Submission
-        ================
-        Name:       {self.name}
-        City:       {self.city} 
-        Kind:       {self.kind}
-        """
+        return f"{self.name} — {self.city} ({self.kind})"
