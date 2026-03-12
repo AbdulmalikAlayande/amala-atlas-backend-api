@@ -14,7 +14,7 @@ class SpotSerializer(serializers.ModelSerializer):
     photo_urls = PhotoURLSerializer(many=True, read_only=True)
 
     class Meta:
-        models = models.Spot
+        model = models.Spot
         fields = ('id', 'public_id', 'created_at', 'last_modified_at', 'name', 'address', 'city', 'state', 'lat', 'lng',
                   'photo_urls')
 
