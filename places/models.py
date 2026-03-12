@@ -49,18 +49,8 @@ class Spot(BaseModel):
     last_confirmed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"""
-        Model Spot
-        ============
-        Name:       {self.name}
-        Latitude:   {self.lat}
-        Longitude:  {self.lng}
-        City:       {self.city}
-        Country:    {self.country}
-        Price Band: {self.price_band}
-        tags:       {self.tags}
-        Address:    {self.address}
-        """
+        return f"{self.name} — {self.city}, {self.country}"
+
     class Meta:
         indexes = [
             models.Index(fields=["city"]),
