@@ -71,6 +71,7 @@ class Candidate(BaseModel):
     country      = models.CharField(max_length=120, default="Nigeria")
     source_url   = models.URLField(max_length=500, blank=True)
     source_kind  = models.CharField(max_length=40, blank=True)  # blog|directory|social|user|agent
+    source_channel = models.CharField(max_length=30, blank=True)  # web_form|whatsapp|twitter|google_maps|seed_script
     price_band   = models.CharField(max_length=8, blank=True)
     photo_urls   = GenericRelation(PhotoURL)
     tags         = models.JSONField(default=list, blank=True)
