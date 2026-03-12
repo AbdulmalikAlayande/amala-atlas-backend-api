@@ -124,6 +124,9 @@ class Submission(BaseModel):
     submitted_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="submissions")
     transcript = models.TextField(blank=True)
     raw_payload = models.JSONField(default=dict, blank=True)
+    source_channel = models.CharField(max_length=30, blank=True)  # web_form|whatsapp|twitter|google_maps|seed_script
+    whatsapp_phone = models.CharField(max_length=20, blank=True)
+    conversation_id = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return f"""
