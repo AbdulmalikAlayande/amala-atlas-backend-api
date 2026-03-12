@@ -9,16 +9,40 @@ from places.models import Candidate, Spot
 from verification.models import Verification
 from verification.serializers import VerificationSerializer, CandidateQueueSerializer, VerificationActionSerializer
 
-APPROVE_THRESHOLD = 2
-REJECT_THRESHOLD  = 3
+DEFAULT_APPROVE_THRESHOLD = 2
+REJECT_THRESHOLD = 3
 
 logger = logging.getLogger(__name__)
 
 
-"""
-List candidates pending verification, highest score first.
-"""
+def get_approval_threshold(candidate: Candidate) -> int:
+    """
+    Dynamic approval threshold based on source channel and evidence quality.
+
+    Higher-trust channels need fewer human approvals.
+    """
+    channel = getattr(candidate, 'source_channel', '')
+    signals = candidate.signals or {}
+
+    # Google Maps with high rating: auto-verified at ingestion, but if it
+    # reaches the queue it still only needs 1 approval
+    if channel == "google_maps" and candidate.score >= 0.70:
+        return 1
+
+    # WhatsApp with GPS location pin: person was physically there
+    if channel == "whatsapp" and signals.get("has_coords"):
+        return 1
+
+    # Web form with photo evidence
+    if channel == "web_form" and candidate.photo_urls.exists():
+        return 1
+
+    # Everything else: standard 2 approvals
+    return DEFAULT_APPROVE_THRESHOLD
+
+
 class GetVerificationCandidateQueue(ListAPIView):
+    """List candidates pending verification, highest score first."""
 
     serializer_class = CandidateQueueSerializer
 
