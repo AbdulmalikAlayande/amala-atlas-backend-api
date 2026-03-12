@@ -111,23 +111,29 @@ def create_candidate_from_submission(sub: Submission, photo_urls=None) -> Candid
         lat=lat,
         lng=lng,
         tags=sub.tags,
-        hours_text = sub.hours_text,
-        phone = sub.phone or "Not Available",
-        website = sub.website or "Not Available",
-        email = sub.email or "Not Available",
+        hours_text=sub.hours_text,
+        phone=sub.phone or "",
+        website=sub.website or "",
+        email=sub.email or "",
         price_band=sub.price_band or "",
         source_url="",
-        source_kind="user",
-        evidence=[{"kind": "user_submit", "photo_url": [{"url": photo_url.url} for photo_url in sub.photo_urls.all()]}] if sub.photo_urls.exists() else [],
+        source_kind=source_kind,
+        source_channel=source_channel,
+        evidence=[{
+            "kind": sub.kind,
+            "source_channel": source_channel,
+            "photo_urls": [{"url": p.url} for p in sub.photo_urls.all()],
+        }] if sub.photo_urls.exists() else [{"kind": sub.kind, "source_channel": source_channel}],
         signals=signals,
         score=score,
-        dedupe_key=make_dedupe_key(sub.name, lat, lng),
+        dedupe_key=dedupe,
         geo_precision=precision,
         status="pending_verification",
     )
 
-    if not sub.photo_urls.exists() or sub.photo_urls.count() > 0:
+    if photo_urls:
         for url in photo_urls:
             PhotoURL.objects.create(url=url, content_object=candidate)
 
+    logger.info(f"Created candidate '{candidate.name}' (score={score}, channel={source_channel})")
     return candidate
