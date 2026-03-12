@@ -89,15 +89,7 @@ class Candidate(BaseModel):
     status       = models.CharField(max_length=30, default="pending_verification")
 
     def __str__(self):
-        return f"""
-        Model Candidate
-        ===============
-        Name:       {self.name}
-        Latitude:   {self.lat}
-        Longitude:  {self.lng}
-        City:       {self.city}
-        Country:    {self.country}
-        """
+        return f"{self.name} — {self.city} ({self.status})"
     class Meta:
         indexes = [
             models.Index(fields=["status","-score"]),
