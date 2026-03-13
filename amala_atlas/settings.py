@@ -18,7 +18,8 @@ DEBUG = ENV.bool("DEBUG", "False")
 ALLOWED_HOSTS = ["amala-atlas.onrender.com", "localhost", "127.0.0.1"]
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:8080", "http://127.0.0.1:3000", "https://amalatlas.vercel.app", "https://amalaatlas-hazel.vercel.app"]
 
-
+# Ingestion API key for automated discovery agents
+INGEST_API_KEY = ENV.str("INGEST_API_KEY", "dev-ingest-key")
 
 # Application definition
 
