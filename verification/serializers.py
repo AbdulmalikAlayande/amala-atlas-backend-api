@@ -39,14 +39,8 @@ class CandidateQueueSerializer(serializers.ModelSerializer):
                   "signals", "lat", "lng", "raw_address")
 
     def get_photo_urls(self, obj):
-        print(self)
-        all_photo_urls = []
-        if obj.photo_urls and obj.photo_urls.count() > 0:
-            all_photo_urls = obj.photo_urls.all()
-            print("1. All photo URLs:: ", all_photo_urls)
-        else:
+        photos = obj.photo_urls.all()
+        if not photos.exists():
             candidate_ct = ContentType.objects.get_for_model(obj)
-            all_photo_urls = PhotoURL.objects.filter(content_type=candidate_ct, object_id=obj.id)
-            print("2. All photo URLs:: ", all_photo_urls)
-
-        return PhotoURLSerializer(all_photo_urls, many=True).data
+            photos = PhotoURL.objects.filter(content_type=candidate_ct, object_id=obj.id)
+        return PhotoURLSerializer(photos, many=True).data
