@@ -15,6 +15,7 @@ inflection = "*"
 django-filter = "*"
 dj-database-url = "*"
 psycopg2-binary = "*"
+pydantic-ai = "*"
 
 [dev-packages]
 
