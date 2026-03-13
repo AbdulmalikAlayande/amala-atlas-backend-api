@@ -35,6 +35,8 @@ urlpatterns += [
     path('verify/queue/', verification.views.GetVerificationCandidateQueue.as_view()),
     path('verify/action/', verification.views.VerificationActionView.as_view()),
     path('ingest/', ingestion.views.IngestCandidateView.as_view()),
+    path('ingest/batch/', ingestion.views.IngestBatchView.as_view()),
     path('submit-candidate/', places.views.CandidateSubmissionView.as_view()),
     path("health/", places.views.HealthCheckView.as_view(), name="health"),
+    path('whatsapp/', include('whatsapp.urls')),
 ]
