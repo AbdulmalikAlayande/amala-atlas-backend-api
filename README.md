@@ -1,92 +1,150 @@
 # Amala Atlas — Backend API
 
-[![Django](https://img.shields.io/badge/Django-5.0+-092e20.svg)](https://www.djangoproject.com)
+[![Django](https://img.shields.io/badge/Django-5.2+-092e20.svg)](https://www.djangoproject.com)
 [![DRF](https://img.shields.io/badge/DRF-3.14+-red.svg)](https://www.django-rest-framework.org)
+[![Live](https://img.shields.io/badge/API-amala--atlas.onrender.com-blue.svg)](https://amala-atlas.onrender.com)
 
-The **Amala Atlas Backend** is the system of record for the Amala Atlas ecosystem. It provides the RESTful API for candidate ingestion, verification workflows, and serves the canonical database of verified Amala spots.
+The **system of record** for the Amala Atlas ecosystem. Manages the full lifecycle of an Amala spot — from raw submission through scoring, deduplication, verification, and promotion to the canonical map database.
 
----
+## Architecture
 
-## 🏗️ Architecture
+The backend is a Django project with six apps, each handling a distinct domain:
 
-The backend manages the lifecycle of a "Spot":
-1.  **Ingestion:** Discovered candidates are POSTed from the Auto-Discovery service.
-2.  **Verification:** Candidates enter a verification queue where they are reviewed and promoted to "Spots".
-3.  **Consumption:** Verified Spots are served via public APIs for the frontend.
+```
+amala_atlas/                # Django project config (settings, urls, wsgi)
+├── places/                 # Core: Spot, Candidate, Submission, PhotoURL
+│   ├── models.py           # Data models
+│   ├── services.py         # Scoring, geocoding integration, deduplication
+│   ├── serializers.py      # DRF serializers
+│   ├── views.py            # Spot API + candidate submission endpoint
+│   ├── filters.py          # Bbox, city, tag, query filters for spots
+│   ├── nlp_utils.py        # Nigerian food keywords + phone extraction
+│   ├── geocoding.py        # Nominatim + 14-city centroid fallback
+│   └── dedupe.py           # Name normalization, phone matching, fuzzy dedup
+├── verification/           # Human review pipeline
+│   ├── models.py           # Verification model (approve/reject/merge)
+│   └── views.py            # Queue, action endpoint, dynamic thresholds
+├── ingestion/              # Automated discovery intake
+│   ├── views.py            # POST /ingest/ and /ingest/batch/ (API key auth)
+│   ├── extractors.py       # HTML content extraction utilities
+│   └── agents/             # Discovery agents
+│       ├── google_maps.py  # Google Places API scanner
+│       └── twitter.py      # Twitter/X venue mention extractor
+├── whatsapp/               # WhatsApp bot via Twilio
+│   ├── models.py           # WhatsAppSession (conversation state)
+│   ├── conversation.py     # State machine: awaiting_spot → ... → complete
+│   ├── parser.py           # Nigerian spot name/location text parsing
+│   └── views.py            # Twilio webhook endpoint
+├── users/                  # Custom User with WhatsApp phone + contribution tracking
+└── commons/                # BaseModel (created_at, last_modified_at, public_id)
+```
 
-### Core Apps:
-- `places`: Manages `Spot` and `Candidate` models.
-- `verification`: Logic for human-in-the-loop review and promotion.
-- `ingestion`: API endpoints for machine-driven discovery intake.
-- `users`: Custom user management.
+## Candidate Lifecycle
 
----
+```
+Submission (raw data)
+    ↓  geocode_if_needed()     — Nominatim → city centroid fallback
+    ↓  compute_signals()       — keyword hits, has_photo, has_coords
+    ↓  compute_score()         — base signals + source channel trust bonus
+    ↓  is_duplicate_of_existing() — phone match → dedupe key → fuzzy name+proximity
+    ↓
+Candidate (pending_verification)
+    ↓  verification queue → human approve/reject
+    ↓  dynamic threshold: 1 approval (WhatsApp+GPS, Google Maps) or 2 (default)
+    ↓
+Spot (on the map)
+```
 
-## 🛠️ Tech Stack
-- **Framework:** Django 5.x
-- **API:** Django REST Framework (DRF)
-- **Database:** PostgreSQL (Production), SQLite (Dev)
-- **Environment:** `Pipenv` or `requirements.txt`
+## Source-Channel Scoring
 
----
+Different discovery channels carry different inherent trust levels:
 
-## 🚦 Getting Started
+| Channel | Score Bonus | Why |
+|---------|-----------|-----|
+| Google Maps | +0.35 | Already reviewed by Google's system |
+| WhatsApp + GPS | +0.30 | Person is physically at the location |
+| WhatsApp (text) | +0.15 | Person knows the spot, no GPS proof |
+| Web form + photo | +0.20 | Visual evidence provided |
+| Web form | +0.10 | Standard submission |
+| Seed script | +0.10 | Extracted from blog content |
+| Twitter | +0.05 | Mentions, not confirmations |
+
+Base signals: keyword match (+0.35), has photo (+0.10), has coordinates (+0.10).
+
+## API Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/spots/` | GET | Public | List/filter verified Amala spots (bbox, city, tags, query) |
+| `/submit-candidate/` | POST | Public | Manual spot submission from web form |
+| `/verify/queue/` | GET | Auth | Candidates pending verification (filterable by city, source_kind, source_channel) |
+| `/verify/action/` | POST | Auth | Approve, reject, or merge a candidate |
+| `/ingest/` | POST | API Key | Single candidate intake from discovery agents |
+| `/ingest/batch/` | POST | API Key | Bulk candidate intake |
+| `/whatsapp/webhook/` | POST | Twilio | WhatsApp bot webhook (Twilio signature) |
+| `/health/` | GET | Public | Health check |
+
+## Management Commands
+
+```bash
+# Bootstrap data from Nigerian food blogs
+python manage.py seed_from_blogs [--dry-run] [--urls URL1 URL2]
+
+# Run Google Maps discovery scan for a city
+python manage.py run_google_maps_scan --city Lagos
+
+# Run Twitter/X scan for amala spot mentions
+python manage.py run_twitter_scan
+```
+
+## Getting Started
 
 ### Requirements
 - Python 3.11+
-- SQLite or PostgreSQL
+- PostgreSQL (production) or SQLite (development)
 
 ### Installation
-1.  Navigate to the backend directory:
-    ```bash
-    cd amala-atlas-backend-api
-    ```
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  Run migrations:
-    ```bash
-    python manage.py migrate
-    ```
-4.  Load seed data (optional):
-    ```bash
-    python manage.py loaddata fixtures/seeds_core.json
-    ```
 
-### Configuration
-Create a `.env` file in `amala-atlas-backend-api/`:
-```env
-DEBUG=True
-SECRET_KEY=your_secret_key
-DATABASE_URL=sqlite:///db.sqlite3
+```bash
+cd amala-atlas-backend-api
+
+# Install dependencies
+pipenv install          # or: pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env    # Then edit with your DATABASE_URL, SECRET_KEY, etc.
+
+# Run migrations
+python manage.py migrate
+
+# Start the server
+python manage.py runserver
 ```
 
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET_KEY` | Yes | Django secret key |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `DEBUG` | No | `True` for development (default: `False`) |
+| `INGEST_API_KEY` | No | API key for `/ingest/` endpoints (default: `dev-ingest-key`) |
+| `TWILIO_ACCOUNT_SID` | No | Twilio account SID for WhatsApp bot |
+| `TWILIO_AUTH_TOKEN` | No | Twilio auth token |
+| `TWILIO_WHATSAPP_NUMBER` | No | Twilio WhatsApp sender number |
+| `GOOGLE_MAPS_API_KEY` | No | Google Places API key for discovery agent |
+| `TWITTER_BEARER_TOKEN` | No | Twitter API v2 bearer token for discovery agent |
+
+## Testing
+
+```bash
+python manage.py test
+```
+
+## Deployment
+
+Deployed on [Render](https://amala-atlas.onrender.com) with PostgreSQL.
+
 ---
 
-## 🔌 API Endpoints
-
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/spots/` | GET | List all verified Amala spots |
-| `/ingest/` | POST | Intake for Auto-Discovery candidates |
-| `/verify/queue/` | GET | List candidates awaiting verification |
-| `/verify/action/` | POST | Approve, reject, or merge candidates |
-| `/submit-candidate/` | POST | Public endpoint for manual submissions |
-| `/health/` | GET | System health check |
-
----
-
-## 🧪 Testing & Engineering
-- **Unit Tests:** `python manage.py test`
-- **Engineering Practices:**
-  - **Unit & Integration Testing:** Comprehensive coverage for verification logic and API serializers.
-  - **Code Reviews:** Strict adherence to Django best practices.
-  - **CI/CD:** Automated testing on push.
-
----
-
-## 📝 TODOs
-- [ ] Implement Geohash-based proximity search.
-- [ ] Add support for multi-photo uploads.
-- [ ] Implement rate-limiting for public submission endpoints.
+*Part of the [Amala Atlas](https://github.com/AbdulmalikAlayande/Amala-Atlas) ecosystem.*
