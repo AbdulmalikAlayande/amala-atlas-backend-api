@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'places.apps.PlacesConfig',
     'users.apps.UsersConfig',
     'verification.apps.VerificationConfig',
+    'whatsapp.apps.WhatsappConfig',
 
     'django_extensions.apps.DjangoExtensionsConfig',
     'django_filters',
