@@ -12,23 +12,28 @@ from django.views import View
 from places import services
 from places.filters import GetSpotsFilter
 from places.models import Spot, Submission, Candidate, PhotoURL
-from places.serializers import SpotSerializer, GetSpotSerializer, CandidateSubmissionSerializer
+from places.serializers import (
+    SpotSerializer,
+    GetSpotSerializer,
+    CandidateSubmissionSerializer,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class SpotApiView(views.APIView):
     serializer_class = SpotSerializer
 
     def get_serializer(self, *args, **kwargs):
-        kwargs['context'] = self.get_serializer_context()
+        kwargs["context"] = self.get_serializer_context()
         return self.serializer_class(*args, **kwargs)
 
     def get_serializer_context(self):
         yield {
-            'request': self.request,
-            'format': self.format_kwarg,
-            'view': self,
+            "request": self.request,
+            "format": self.format_kwarg,
+            "view": self,
         }
 
     def post(self, request):
@@ -41,18 +46,23 @@ class SpotApiView(views.APIView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except JSONDecodeError | Exception:
-            return JsonResponse({"result": "error","message": "Json decoding error"}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(
+                {"result": "error", "message": "Json decoding error"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class SpotPagination(pagination.PageNumberPagination):
     page_size = 10
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 10
 
 
 """
 
 """
+
+
 class SpotViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Spot.objects.all().order_by("-created_at")
     serializer_class = GetSpotSerializer
@@ -61,12 +71,12 @@ class SpotViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-"""
-Accepts both manual and agentic submissions.
-- Saves a Submission row (audit)
-- Creates a Candidate with status=pending_verification
-"""
 class CandidateSubmissionView(generics.CreateAPIView):
+    """
+    Accepts both manual and agentic submissions.
+    - Saves a Submission row (audit)
+    - Creates a Candidate with status=pending_verification
+    """
 
     serializer_class = CandidateSubmissionSerializer
 
@@ -75,7 +85,11 @@ class CandidateSubmissionView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         submission: Submission = serializer.save(
-            submitted_by=request.user if getattr(request, 'user', None) and request.user.is_authenticated else None,
+            submitted_by=(
+                request.user
+                if getattr(request, "user", None) and request.user.is_authenticated
+                else None
+            ),
             source_channel="web_form",
         )
 
@@ -85,13 +99,19 @@ class CandidateSubmissionView(generics.CreateAPIView):
             for url in photo_urls:
                 PhotoURL.objects.create(url=url, content_object=submission)
 
-        candidate: Candidate = services.create_candidate_from_submission(submission, photo_urls=photo_urls)
+        candidate: Candidate = services.create_candidate_from_submission(
+            submission, photo_urls=photo_urls
+        )
 
         return Response(
             {
-                "ok": True, "candidate_id": candidate.public_id,
-                "status": candidate.status, "score":candidate.score
-            }, status=HTTP_201_CREATED)
+                "ok": True,
+                "candidate_id": candidate.public_id,
+                "status": candidate.status,
+                "score": candidate.score,
+            },
+            status=HTTP_201_CREATED,
+        )
 
 
 class HealthCheckView(View):
