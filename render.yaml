@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: amala-atlas-backend-api
+    runtime: python
+    buildCommand: pip install --no-cache-dir -r requirements.txt
+    preDeployCommand: python manage.py migrate
+    startCommand: gunicorn amala_atlas.wsgi
+    healthCheckPath: /health/
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: INGEST_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_NUMBER
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: TWITTER_BEARER_TOKEN
+        sync: false
