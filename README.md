@@ -156,7 +156,7 @@ If CI fails, deployment should be blocked until fixed.
 ### Render Blueprint (`render.yaml`)
 
 This repository includes a `render.yaml` blueprint configured with:
-- **Build Command**: `pip install -r requirements.txt`
+- **Build Command**: `pip install --no-cache-dir -r requirements.txt`
 - **Pre-Deploy Command**: `python manage.py migrate`
 - **Start Command**: `gunicorn amala_atlas.wsgi`
 - **Health Check Path**: `/health/`
