@@ -145,6 +145,40 @@ python manage.py test
 
 Deployed on [Render](https://amala-atlas.onrender.com) with PostgreSQL.
 
+### CI (Pre-Deploy Validation)
+
+GitHub Actions runs on every pull request and push to `main`/`master`:
+- `python manage.py check`
+- `python manage.py test`
+
+If CI fails, deployment should be blocked until fixed.
+
+### Render Blueprint (`render.yaml`)
+
+This repository includes a `render.yaml` blueprint configured with:
+- **Build Command**: `pip install -r requirements.txt`
+- **Pre-Deploy Command**: `python manage.py migrate`
+- **Start Command**: `gunicorn amala_atlas.wsgi`
+- **Health Check Path**: `/health/`
+
+### Environment Variables
+
+`render.yaml` defines required environment variable keys with `sync: false` so secrets stay in Render and can be synced per environment before deploy:
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `INGEST_API_KEY`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_WHATSAPP_NUMBER`
+- `GOOGLE_MAPS_API_KEY`
+- `TWITTER_BEARER_TOKEN`
+
+For production, set `DATABASE_URL` from your Aiven PostgreSQL credentials and keep all API keys in Render's secret environment settings.
+
+### Automated Rollback
+
+Enable automatic rollback in your Render service settings so Render reverts a deploy if post-deploy health checks fail.
+
 ---
 
 *Part of the [Amala Atlas](https://github.com/AbdulmalikAlayande/Amala-Atlas) ecosystem.*
